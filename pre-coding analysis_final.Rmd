@@ -1,0 +1,330 @@
+---
+title: "incubation analysis_final"
+author: "JZ"
+date: "3/15/2022"
+output: html_document
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+library(reshape2)
+library(ggplot2)
+library(psych)
+
+set.seed(20)
+
+options(scipen=999)
+```
+
+```{r import data}
+# use of platform before start coding
+df_seq <- read.csv("data/del_pre.csv") 
+
+# import grade
+df_grade <- 
+  read.csv("data/df_HWGrades.csv") %>% 
+  select(-grade,-HashedId) %>% 
+  melt(id = "Id") %>% 
+  mutate(variable = as.numeric(gsub("X","",variable))) %>% 
+  select(Id, Unit = variable,grade = value) %>% 
+  group_by(Unit) %>% 
+  mutate(rank = rank(grade))
+  
+#nrow(df_grade[!duplicated(df_grade[c(1,2)]),]) #make sure there's no duplicates
+
+# import class schedule
+HW_date <- 
+  read.csv("data/HW release date.csv") %>% 
+  mutate(
+    release.date = mdy(release.date),
+    HW = as.numeric(gsub("HW0","",HW)))
+
+```
+
+```{r Q3 starting date - prep}
+#start date & 4 measures
+# Date diff between start date and HW release date
+df_dateDiff <- 
+  left_join(
+    df_seq %>% subset(Event == "CodioAssign"),
+    HW_date, 
+    by = c("Unit" = "HW")) %>% 
+  mutate(dateDiff = as.numeric(mdy(date) - ymd(release.date))) %>% 
+  select("Id","Unit","Event","dateDiff")
+
+df_dateDiff = df_dateDiff[!duplicated(df_dateDiff[c(1,2)]),]
+
+# number of days on piazza
+piazza_canvas_Days <- 
+  df_seq %>% 
+  group_by(Id,Unit) %>% 
+  summarise(
+    NDaysPiazza = sum(Event == "Piazza"),
+    NDaysCanvas = sum(Event == "Canvas"))
+
+# piazza posts viewed
+piazza_posts <- 
+  left_join(
+    read.csv("data/df_Piazza.csv"),
+    subset(df_seq,Event == "CodioAssign"), 
+    by = c("Id","Unit")) %>% 
+  mutate(Keep = ifelse(ymd_hms(Timestamp.x) <= mdy_hm(Timestamp.y),1,0)) %>% 
+  subset(Keep ==1) %>% 
+  select(Id, Unit, Timestamp.x) %>% 
+  mutate(Event = "Piazza") %>% 
+  group_by(Id,Unit) %>% 
+  summarise(NViews = n())
+
+# canvas videos watched in minutes
+df_v = 
+  read.csv("data/canvas_videos_data_fa20_anon.csv") %>% 
+  subset(Category != "Exam 1 Review Sessions") %>% 
+  mutate(Timestamp = mdy_hm(Timestamp))
+
+df_mapping = read.csv("data/video_HW_mapping.csv")
+
+df_v = left_join(df_v,df_mapping, by = "Topic")
+colnames(df_v)[9] = "Unit"
+df_v$Unit = as.numeric(as.character(df_v$Unit))
+
+canvas_minutes = 
+  inner_join(
+    df_v,
+    subset(df_seq,Event == "CodioAssign"), by = c("Id","Unit")) %>%
+  mutate(Keep = ifelse(ymd_hms(Timestamp.x) <= mdy_hm(Timestamp.y),1,0)) %>%
+  subset(Keep ==1) %>% 
+  group_by(Id,Unit) %>%
+  summarize(
+    NVideos_clips = n(),
+    NVideos = n_distinct(Topic),
+    NMinutes = sum(Minutes))
+
+df_startDate = 
+  left_join(df_dateDiff, piazza_canvas_Days, by = c("Id","Unit")) %>% 
+  left_join(.,piazza_posts, by = c("Id","Unit")) %>% 
+  left_join(.,canvas_minutes, by = c("Id","Unit"))
+  
+df_startDate[, c(5,6,7,10)][is.na(df_startDate[,c(5,6,7,10)])] <- 0
+
+```
+
+```{r correlation between the pre-coding activities}
+library("Hmisc")
+df_corr = select(df_startDate,"NDaysPiazza","NDaysCanvas","NViews","NMinutes")
+
+res2 <- rcorr(as.matrix(df_corr), type = "spearman")
+res2
+res2$P
+```
+
+```{r Q3 impact on starting date}
+temp = df_startDate %>% 
+  group_by(Unit) %>% 
+  summarise(
+    N = n(),
+    NDaysPiazza_avg = mean(NDaysPiazza),
+    NDaysCanvas_avg = mean(NDaysCanvas),
+    NPostsViewedPiazza_avg = mean(NViews),
+    NMinutesWathedCanvas_avg = mean(NMinutes)
+  )
+
+# overall
+summary(lm(dateDiff~ as.factor(Unit) + NDaysPiazza+NDaysCanvas + NViews + NMinutes, data = df_startDate))
+
+#Unit 0 
+df_0 = subset(df_startDate, Unit == 2) %>% mutate(NMinutes != 0)
+all.reg <- lm(dateDiff~ NDaysPiazza+NDaysCanvas + NViews + NMinutes, data = df_0)
+
+# check for homoscedasticity assumption (constant variance)
+plot(all.reg, which = 1)
+# check for the normality of the residuals
+plot(all.reg, which = 2)
+#check for multicollinearity assumption by checking the variance inflation factors (VIF)
+library(usdm)
+vif.1 <- usdm::vif(df_0[,c(5,6,7,10)]) #VIF should be below 5
+
+# for each homework
+
+variableResults_all = NULL
+modelResults_all = NULL
+
+for (i in c(1:9)) {
+  temp = subset(df_startDate, Unit == i)
+  temp = subset(temp, NDaysPiazza>0 | NDaysCanvas>0)
+  r = summary(lm(dateDiff~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = temp))
+  coe = as.data.frame(r$coefficients[,1])
+  p = as.data.frame(r$coefficients[,4]) 
+  
+  variableResults = cbind(rep(i,5),coe, p)
+  variableResults_all = rbind(variableResults_all, variableResults)
+  
+  rSqr = r$r.squared
+  fStats = r$fstatistic
+  
+  modelResults = cbind(rep(i,3),rSqr,fStats)
+  modelResults_all = rbind(modelResults_all, modelResults)
+  
+  print(i)
+  print(r)
+  
+  
+}  
+```
+  
+```{r Q4 impact on grade}
+df_gradeRanks = 
+  left_join(df_grade, df_startDate, by = c("Id","Unit"))
+
+df_gradeRanks = df_gradeRanks[!duplicated(df_gradeRanks[c(1,2)]),]
+df_gradeRanks <- subset(df_gradeRanks,df_gradeRanks$dateDiff<=15)
+
+summary(lm(rank~as.factor(Unit) + NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = df_gradeRanks))
+
+#HW 0
+df_grade_3 = subset(df_gradeRanks, Unit == 3)
+
+all.reg <- lm(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = df_grade_3)
+
+# check multiple linear regression assumptions
+# check for homoscedasticity assumption (constant variance)
+plot(all.reg, which = 1)
+# check for the normality of the residuals
+plot(all.reg, which = 2)
+#check for multicollinearity assumption by checking the variance inflation factors (VIF)
+
+# for each homework
+for (i in c(1:9)) {
+  temp = subset(df_gradeRanks, Unit == i)
+  r = summary(lm(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = temp))
+  print(i)
+  print(r)
+  
+}
+
+# individual model for each HW ----
+variableResults_all = NULL
+
+for (i in c(1:9)){
+  temp = subset(df_gradeRanks, Unit == i)
+  
+  for(x in c(7,8,9,12)){
+    
+    predictor_name = colnames(temp[x])
+    predictor_column = temp[,x] %>% unlist()
+    r = summary(lm(temp$rank ~ predictor_column))
+    
+    coe = as.data.frame(r$coefficients[2,1])
+    p = as.data.frame(r$coefficients[2,4]) 
+  
+    variableResults = cbind(i,predictor_name,coe, p)
+    variableResults_all = rbind(variableResults_all, variableResults)
+    
+    print(i)
+    print(predictor_name)
+    print(coe)
+    print(p)
+  }
+  
+}
+
+colnames(variableResults_all)[3] <- "coe"
+colnames(variableResults_all)[4] <- "p"
+variableResults_all$sigLevel = 
+  ifelse(
+    variableResults_all$p <=.001,"***",
+    ifelse(variableResults_all$p <=.01,"**",
+           ifelse(variableResults_all$p <=.05,"*",
+                  ifelse(variableResults_all$p <=.1,".",""))))
+
+variableResults_all$Coefficient_sig = paste0(round(variableResults_all$coe,2),variableResults_all$sigLevel)
+
+# scatter plot ----
+
+ggplot(df_gradeRanks, aes(NViews,rank))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~Unit)+
+  labs(x="Post viewed on Piazza", y = "ranks")+
+  theme_classic()
+
+# moderation analysis
+df_grade_3 = subset(df_gradeRanks, Unit == 2)
+summary(lm(df_grade_3$rank~df_grade_3$dateDiff))
+summary(lm(df_grade_3$NDaysPiazza~df_grade_3$dateDiff))
+summary(lm(df_grade_3$rank~df_grade_3$NDaysPiazza))
+summary(lm(df_grade_3$rank~df_grade_3$dateDiff + df_grade_3$NDaysPiazza))
+summary(lm(df_grade_3$rank~df_grade_3$dateDiff * df_grade_3$NDaysPiazza))
+
+summary(lm(df_grade_3$rank~df_grade_3$dateDiff + df_grade_3$NDaysPiazza + df_grade_3$NDaysCanvas + df_grade_3$NViews+ df_grade_3$NMinutes))
+
+mediate(rank ~  dateDiff + (NDaysPiazza), data = df_grade_3, n.iter = 5000) %>%  print(short = FALSE)
+
+mediate(rank ~  NDaysPiazza + (dateDiff), data = df_grade_3, n.iter = 5000) %>%  print(short = FALSE)
+
+
+```
+
+```{r Q2 difficulty}
+#rank of days on Piazza
+df_startDate %>% 
+  subset(NDaysPiazza>0) %>% 
+  group_by(Unit) %>% 
+  summarise(
+    N = n(),
+    sum(NDaysPiazza),
+    mean(NDaysPiazza))
+
+# rank of days on Canvas
+df_startDate %>% 
+  subset(NDaysCanvas>0) %>% 
+  group_by(Unit) %>% 
+  summarise(
+    sum = sum(NDaysCanvas),
+    N_students = n_distinct(Id),
+    avg = mean(NDaysCanvas))
+
+# rank of post viewed on Piazza
+df_startDate %>% 
+  subset(NDaysPiazza>0) %>% 
+  group_by(Unit) %>% 
+  summarise(
+    sum = sum(NViews),
+    N_students = n_distinct(Id),
+    avg = mean(NViews))
+
+# rank of minutes of video watched on Canvas
+df_startDate %>% 
+  subset(NDaysCanvas>0) %>% 
+  group_by(Unit) %>% 
+  summarise(
+    sum = sum(NMinutes),
+    N_students = n_distinct(Id),
+    avg = mean(NMinutes))
+
+
+# correlation
+difficulty = c(0,7,5,3,1,2,6,4,8)
+NDaysPiazza = c(0,8,3,4,5,2,1,6,7)
+NDaysCanvas = c(0,7,8,3,2,5,1,6,4)
+NPostsViewed = c(0,8,2,1,5,3,4,7,6)
+NMinutedWatched = c(0,5,2,7,6,8,3,1,4)
+
+cor.test(difficulty,NDaysPiazza, method = "spearman" )
+cor.test(difficulty,NDaysCanvas, method = "spearman")
+cor.test(difficulty,NPostsViewed, method = "spearman")
+cor.test(difficulty,NMinutedWatched, method = "spearman")
+
+
+corr.test(difficulty,NDaysPiazza, method = "spearman",adjust = "BH")$p.adj
+corr.test(difficulty,NDaysCanvas, method = "spearman",adjust = "BH")$p.adj
+corr.test(difficulty,NPostsViewed, method = "spearman",adjust = "BH")$p.adj
+corr.test(difficulty,NMinutedWatched, method = "spearman",adjust = "BH")$p.adj
+
+
+
+```
+
+
