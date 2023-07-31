@@ -1,5 +1,5 @@
 ---
-title: "incubation analysis_final"
+title: "pre-coding analysis_final"
 author: "JZ"
 date: "3/15/2022"
 output: html_document
@@ -13,6 +13,7 @@ library(stringr)
 library(reshape2)
 library(ggplot2)
 library(psych)
+library(Rfit)
 
 set.seed(20)
 
@@ -132,11 +133,11 @@ temp = df_startDate %>%
   )
 
 # overall
-summary(lm(dateDiff~ as.factor(Unit) + NDaysPiazza+NDaysCanvas + NViews + NMinutes, data = df_startDate))
+summary(rfit(dateDiff~ as.factor(Unit) + NDaysPiazza+NDaysCanvas + NViews + NMinutes, score=bentscores1,data = df_startDate)) #select bentscores1 due to heavy right skew
 
 #Unit 0 
 df_0 = subset(df_startDate, Unit == 2) %>% mutate(NMinutes != 0)
-all.reg <- lm(dateDiff~ NDaysPiazza+NDaysCanvas + NViews + NMinutes, data = df_0)
+all.reg <- rfit(dateDiff~ NDaysPiazza+NDaysCanvas + NViews + NMinutes,score=bentscores1, data = df_0)
 
 # check for homoscedasticity assumption (constant variance)
 plot(all.reg, which = 1)
@@ -154,7 +155,7 @@ modelResults_all = NULL
 for (i in c(1:9)) {
   temp = subset(df_startDate, Unit == i)
   temp = subset(temp, NDaysPiazza>0 | NDaysCanvas>0)
-  r = summary(lm(dateDiff~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = temp))
+  r = summary(rfit(dateDiff~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, score=bentscores1, data = temp))
   coe = as.data.frame(r$coefficients[,1])
   p = as.data.frame(r$coefficients[,4]) 
   
@@ -181,12 +182,12 @@ df_gradeRanks =
 df_gradeRanks = df_gradeRanks[!duplicated(df_gradeRanks[c(1,2)]),]
 df_gradeRanks <- subset(df_gradeRanks,df_gradeRanks$dateDiff<=15)
 
-summary(lm(rank~as.factor(Unit) + NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = df_gradeRanks))
+summary(rfit(rank~as.factor(Unit) + NDaysPiazza + NDaysCanvas + NViews + NMinutes, score=bentscores1, data = df_gradeRanks))
 
 #HW 0
 df_grade_3 = subset(df_gradeRanks, Unit == 3)
 
-all.reg <- lm(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = df_grade_3)
+all.reg <- rfit(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes,score=bentscores1, data = df_grade_3)
 
 # check multiple linear regression assumptions
 # check for homoscedasticity assumption (constant variance)
@@ -198,7 +199,7 @@ plot(all.reg, which = 2)
 # for each homework
 for (i in c(1:9)) {
   temp = subset(df_gradeRanks, Unit == i)
-  r = summary(lm(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, data = temp))
+  r = summary(rfit(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, score=bentscores1, data = temp))
   print(i)
   print(r)
   
@@ -214,7 +215,7 @@ for (i in c(1:9)){
     
     predictor_name = colnames(temp[x])
     predictor_column = temp[,x] %>% unlist()
-    r = summary(lm(temp$rank ~ predictor_column))
+    r = summary(rfit(temp$rank ~ predictor_column))
     
     coe = as.data.frame(r$coefficients[2,1])
     p = as.data.frame(r$coefficients[2,4]) 
