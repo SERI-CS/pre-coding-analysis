@@ -27,4 +27,5 @@ Folders:
 
 Files:
 
-* `pre-coding analysis_final`: students' pre-coding activities and its relation to behavioral delay and performance outcomes.
+* `pre-coding analysis_final`: students' pre-coding activities and its relation to behavioral delay and performance outcomes. (Developed by J. Zhang)
+* `updated_SIGCSE 2024 precoding`: students' pre-coding activities and its relation to behavioral delay and performance outcomes using adjusted B-H correction. (developed by J. Zhang and E. Cloude)
