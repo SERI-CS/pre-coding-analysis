@@ -15,20 +15,21 @@ library(knitr)
 library(dplyr)
 
 ### extra packages needed to install alpha.correction.bh package by Mogessie (2023); https://cran.r-project.org/web/packages/alpha.correction.bh/readme/README.html
-write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', file = "~/.Renviron", append = TRUE)
-Sys.which("make")
+#write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', file = "~/.Renviron", append = TRUE)
+#Sys.which("make")
 ## "C:\\rtools40\\usr\\bin\\make.exe"
-install.packages("jsonlite", type = "source")
+#install.packages("jsonlite", type = "source")
 
 
-### Jump here if you already have Rtools 4.0 installed 
+############### Jump here if you already have Rtools 4.0 installed 
 devtools::install_github('pcla-code/alpha.correction.bh', force = TRUE)
+library(alpha.correction.bh)
 
 set.seed(20)
 
 options(scipen=999)
 
-setwd("C://")
+setwd("C:/Users/eclou/Downloads") # remove this from GIT
 
 ### use of platform before start coding ###
 df_seq <- read.csv("del_pre.csv") 
@@ -50,9 +51,9 @@ HW_date <-
   read.csv("HW release date.csv") %>% 
   mutate(
     release.date = mdy(release.date),
-    HW = as.numeric(gsub("HW0","",Ã¯..HW)))
+    HW = as.numeric(gsub("HW0","",ï..HW)))
 
-#start date & 4 measures
+
 # Date diff between start date and HW release date
 df_dateDiff <- 
   left_join(
@@ -135,8 +136,8 @@ df_startDate %>%
   subset(NDaysCanvas>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    sum = sum(NDaysCanvas),
     N_students = n_distinct(PennId),
+    sum = sum(NDaysCanvas),
     avg = mean(NDaysCanvas))
 
 # rank of post viewed on Piazza
@@ -144,8 +145,8 @@ df_startDate %>%
   subset(NDaysPiazza>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    sum = sum(NViews),
     N_students = n_distinct(PennId),
+    sum = sum(NViews),
     avg = mean(NViews))
 
 # rank of minutes of video watched on Canvas
@@ -153,8 +154,8 @@ df_startDate %>%
   subset(NDaysCanvas>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    sum = sum(NMinutes),
     N_students = n_distinct(PennId),
+    sum = sum(NMinutes),
     avg = mean(NMinutes))
 
 # correlation
@@ -173,12 +174,6 @@ cor.test(difficulty,NMinutedWatched, method = "spearman")
 get_alphas_bh(list(0.1206,0.2125,0.0968,0.9484)) # not significant
 
 ## RQ2 ##
-library("Hmisc")
-df_corr = select(df_startDate,"NDaysPiazza","NDaysCanvas","NViews","NMinutes")
-
-res2 <- rcorr(as.matrix(df_corr), type = "spearman")
-res2
-res2$P
 
 temp = df_startDate %>% 
   group_by(Unit) %>% 
@@ -203,7 +198,6 @@ get_alphas_bh(p_values) # corrected alphas using B-H correction
 df_0 = subset(df_startDate, Unit == 2) %>% mutate(NMinutes != 0)
 all.reg <- rfit(dateDiff~ NDaysPiazza+NDaysCanvas + NViews + NMinutes, scores = bentscores1, data = df_0)
 
-# check for homoscedasticity assumption (constant variance)
 plot(all.reg$fitted.values, which = 1)
 # check for the normality of the residuals
 plot(all.reg$residuals, which = 2)
@@ -273,44 +267,8 @@ plot(all.reg$residuals, which = 2)
 for (i in c(1:9)) {
   temp = subset(df_gradeRanks, Unit == i)
   r = summary(rfit(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, scores = bentscores1, data = temp))
+  bh_correction = as.data.frame(get_alphas_bh(r$coefficients[,"p.value"]))
   print(i)
   print(r)
   
 }
-
-# individual model for each HW ----
-variableResults_all = NULL
-
-for (i in c(1:9)){
-  temp = subset(df_gradeRanks, Unit == i)
-  
-  for(x in c(7,8,9,12)){
-    
-    predictor_name = colnames(temp[x])
-    predictor_column = temp[,x] %>% unlist()
-    r = summary(rfit(temp$rank ~ predictor_column, scores = bentscores1))
-    
-    coe = as.data.frame(r$coefficients[2,1])
-    bh_correction = get_alphas_bh(r$coefficients[,"p.value"])
-    
-    variableResults = cbind(i,predictor_name,coe, bh_correction)
-    variableResults_all = rbind(variableResults_all, variableResults)
-    
-    print(i)
-    print(predictor_name)
-    print(coe)
-    print(bh_correction)
-  }
-  
-}
-
-colnames(variableResults_all)[3] <- "coe"
-colnames(variableResults_all)[4] <- "bh_correction"
-variableResults_all$sigLevel = 
-  ifelse(
-    variableResults_all$p <=.001,"***",
-    ifelse(variableResults_all$p <=.01,"**",
-           ifelse(variableResults_all$p <=.05,"*",
-                  ifelse(variableResults_all$p <=.1,".",""))))
-
-variableResults_all$Coefficient_sig = paste0(round(variableResults_all$coe,2),variableResults_all$sigLevel)
