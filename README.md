@@ -21,6 +21,7 @@ Folders:
 * `df_HWGrades`: Students' assignment grades across homeworks 0 to 9.
 * `df_Piazza`: Q&A platform data.
 * `video_HW_mapping`: Each video published in the course was mapped onto specific programming assignments and programming topics.
+* `avg pre-coding activity_2023August03.xlsx`: Average pre-coding activity usage for each homework ranked from highest to lowest with corresponding correlation values (RQ1).
 
 
 ### Code
