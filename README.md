@@ -7,7 +7,7 @@ This repository contains supplementary materials for the following conference pa
 Submitted to ACM SIGCSE 2024 conference.
 
 # Pre coding analysis
-The rmd file reads in data from the data folder and analyzes how students' pre-coding activities (e.g. days and intensity of using piazza and codio) relate to HW start time and grades.
+The R file reads in data from the data folder and analyzes how students' pre-coding activities (e.g. days and intensity of using piazza and codio) relate to behavioral delay in starting to code and course grades.
 
 ## File structure
 
