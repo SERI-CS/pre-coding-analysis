@@ -3,7 +3,7 @@
 This repository contains supplementary materials for the following conference paper:
 
 [Anonymous authors]\
-**Procrastination vs. Active Delay: How Students Prepare Delay when they start coding but Benefits Assignment Grades**\
+**Procrastination vs. Active Delay: How Students Prepare to Code in Introductory Programming**\
 Submitted to ACM SIGCSE 2024 conference.
 
 # Pre coding analysis
