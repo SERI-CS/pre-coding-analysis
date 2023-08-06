@@ -29,8 +29,27 @@ set.seed(20)
 
 options(scipen=999)
 
+setwd("C:/Users/eclou/Downloads") # remove this from GIT
+
 ### use of platform before start coding ###
-df_seq <- read.csv("del_pre.csv") 
+df_seq <- read.csv("del_pre.csv")
+table(df_seq$Unit, df_seq$Event) # number of interactions total; Canvas = LMS, 
+                                  #CodioLecture = Textbook, OHQ = Online office hours, Piazza = Q&A, CodioAssign was the id to determine when the homework was released.
+
+precoding_activities <- 
+  df_seq %>% 
+  group_by(PennId, Unit) %>% 
+  summarise(
+    NDaysPiazza = sum(Event == "Piazza"),
+    NDaysCanvas = sum(Event == "Canvas"),
+    NDaysOHQ = sum(Event=="OHQ"),
+    NDaysTextbook = sum(Event == "CodioLecture"))
+
+table(precoding_activities$Unit,precoding_activities$NDaysPiazza) # number of students for Q&A
+table(precoding_activities$Unit,precoding_activities$NDaysCanvas) # number of students for LMS
+table(precoding_activities$Unit,precoding_activities$NDaysOHQ) # number of students for OHQ
+table(precoding_activities$Unit,precoding_activities$NDaysTextbook) # number of students for Textbook
+
 
 # import grade
 df_grade <- 
@@ -49,7 +68,7 @@ HW_date <-
   read.csv("HW release date.csv") %>% 
   mutate(
     release.date = mdy(release.date),
-    HW = as.numeric(gsub("HW0","",Ã¯..HW)))
+    HW = as.numeric(gsub("HW0","",ï..HW)))
 
 
 # Date diff between start date and HW release date
