@@ -6,7 +6,7 @@ This repository contains supplementary materials for the following conference pa
 **Procrastination vs. Active Delay: How Students Prepare to Code in Introductory Programming**\
 Submitted to ACM SIGCSE 2024 conference.
 
-# Pre coding analysis
+# Pre-coding analysis
 The R file reads in data from the data folder and analyzes how students' pre-coding activities (e.g., days and intensity of using piazza and codio) relate to behavioral delay in starting to code and course grades.
 
 ## File structure
