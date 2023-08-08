@@ -7,7 +7,7 @@ This repository contains supplementary materials for the following conference pa
 Submitted to ACM SIGCSE 2024 conference.
 
 # Pre-coding analysis
-The R file reads data from the files in the data folder and analyzes how students' pre-coding activities (e.g., days and intensity of using piazza and codio) predict behavioral delay in starting to code an assignment and course grades in an introductory computer science course.
+The R code file reads data from the files in the data folder and analyzes how students' pre-coding activities (e.g., days and intensity of using piazza and codio) predict behavioral delay in starting to code an assignment and course grades in an introductory computer science course.
 
 ## File structure
 
@@ -25,5 +25,5 @@ Folders:
 
 ### Code
 
-Files:
+File:
 * `updated_SIGCSE 2024 precoding`: the script with RQs analyzing students' pre-coding activities and its relation to behavioral delay and performance outcomes.
