@@ -1,6 +1,6 @@
 ---
 title: "Precoding analysis"
-author: "Joyce Zhang and Elizabeth Cloude"
+author: "anonymized for review"
 date: "08/01/2023"
 output: html_document
 ---
@@ -28,8 +28,6 @@ library(alpha.correction.bh)
 set.seed(20)
 
 options(scipen=999)
-
-setwd("C:/Users/eclou/Downloads") # remove this from GIT
 
 ### use of platform before start coding ###
 df_seq <- read.csv("del_pre.csv")
@@ -67,7 +65,7 @@ HW_date <-
   read.csv("HW release date.csv") %>% 
   mutate(
     release.date = mdy(release.date),
-    HW = as.numeric(gsub("HW0","",ï..HW)))
+    HW = as.numeric(gsub("HW0","",Ã¯..HW)))
 
 
 # Date diff between start date and HW release date
