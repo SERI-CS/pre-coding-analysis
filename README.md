@@ -28,5 +28,4 @@ Folders:
 
 Files:
 
-* `pre-coding analysis_final`: students' pre-coding activities and its relation to behavioral delay and performance outcomes.
-* `updated_SIGCSE 2024 precoding`: students' pre-coding activities and its relation to behavioral delay and performance outcomes.
+* `updated_SIGCSE 2024 precoding`: the script with RQs analyzing students' pre-coding activities and its relation to behavioral delay and performance outcomes.
