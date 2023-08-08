@@ -1,5 +1,5 @@
 ---
-  title: "Precoding analysis"
+title: "Precoding analysis"
 author: "Joyce Zhang and Elizabeth Cloude"
 date: "08/01/2023"
 output: html_document
@@ -34,7 +34,7 @@ setwd("C:/Users/eclou/Downloads") # remove this from GIT
 ### use of platform before start coding ###
 df_seq <- read.csv("del_pre.csv")
 table(df_seq$Unit, df_seq$Event) # number of interactions total; Canvas = LMS, 
-                                  #CodioLecture = Textbook, OHQ = Online office hours, Piazza = Q&A, CodioAssign was the id to determine when the homework was released.
+                                   #CodioLecture = Textbook, OHQ = Online office hours, Piazza = Q&A, CodioAssign was the id to determine when the homework was released.
 
 precoding_activities <- 
   df_seq %>% 
@@ -49,7 +49,6 @@ table(precoding_activities$Unit,precoding_activities$NDaysPiazza) # number of st
 table(precoding_activities$Unit,precoding_activities$NDaysCanvas) # number of students for LMS
 table(precoding_activities$Unit,precoding_activities$NDaysOHQ) # number of students for OHQ
 table(precoding_activities$Unit,precoding_activities$NDaysTextbook) # number of students for Textbook
-
 
 # import grade
 df_grade <- 
@@ -138,7 +137,6 @@ df_startDate[, c(5,6,7,10)][is.na(df_startDate[,c(5,6,7,10)])] <- 0
 
 
 #### RQ1 ###
-
 #rank of days on Piazza
 df_startDate %>% 
   subset(NDaysPiazza>0) %>% 
@@ -209,8 +207,6 @@ summary_stats <- summary(a)
 
 p_values <- summary_stats$coefficients[, "p.value"]
 
-get_alphas_bh(p_values) # corrected alphas using B-H correction
-
 #Unit 0 
 df_0 = subset(df_startDate, Unit == 2) %>% mutate(NMinutes != 0)
 all.reg <- rfit(dateDiff~ NDaysPiazza+NDaysCanvas + NViews + NMinutes, scores = bentscores1, data = df_0)
@@ -232,9 +228,8 @@ for (i in c(1:9)) {
   temp = subset(temp, NDaysPiazza>0 | NDaysCanvas>0)
   r = summary(rfit(dateDiff ~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, scores = bentscores1, data = temp))
   coe = as.data.frame(r$coefficients[,1])
-  bh_correction = get_alphas_bh(r$coefficients[,"p.value"])
   
-  variableResults = cbind(rep(i,5),coe, bh_correction)
+  variableResults = cbind(rep(i,5),coe)
   variableResults_all = rbind(variableResults_all, variableResults)
   
   rSqr = r$r.squared
@@ -250,7 +245,6 @@ for (i in c(1:9)) {
 }  
 
 ## RQ3
-
 df_gradeRanks = 
   left_join(df_grade, df_startDate, by = c("PennId","Unit"))
 
@@ -262,8 +256,6 @@ summary_stats <- summary(b)
 
 p_values <- summary_stats$coefficients[, "p.value"]
 
-get_alphas_bh(p_values) # corrected alphas using B-H correction
-
 #HW 0
 df_grade_3 = subset(df_gradeRanks, Unit == 3)
 
@@ -271,8 +263,6 @@ all.reg <- rfit(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, scores = be
 summary_stats <- summary(all.reg)
 
 p_values <- summary_stats$coefficients[, "p.value"]
-
-get_alphas_bh(p_values) # corrected alphas using B-H correction
 
 # check multiple linear regression assumptions
 # check for homoscedasticity assumption (constant variance)
@@ -284,7 +274,6 @@ plot(all.reg$residuals, which = 2)
 for (i in c(1:9)) {
   temp = subset(df_gradeRanks, Unit == i)
   r = summary(rfit(rank~ NDaysPiazza + NDaysCanvas + NViews + NMinutes, scores = bentscores1, data = temp))
-  bh_correction = as.data.frame(get_alphas_bh(r$coefficients[,"p.value"]))
   print(i)
   print(r)
   
