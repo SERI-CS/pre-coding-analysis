@@ -36,7 +36,7 @@ table(df_seq$Unit, df_seq$Event) # number of interactions total; Canvas = LMS,
 
 precoding_activities <- 
   df_seq %>% 
-  group_by(PennId, Unit) %>% 
+  group_by(p_id, Unit) %>% 
   summarise(
     NDaysPiazza = sum(Event == "Piazza"),
     NDaysCanvas = sum(Event == "Canvas"),
@@ -52,9 +52,9 @@ table(precoding_activities$Unit,precoding_activities$NDaysTextbook) # number of 
 df_grade <- 
   read.csv("df_HWGrades.csv") %>% 
   select(-grade,-HashedId) %>% 
-  melt(id = "PennId") %>% 
+  melt(id = "p_id") %>% 
   mutate(variable = as.numeric(gsub("X","",variable))) %>% 
-  select(PennId, Unit = variable,grade = value) %>% 
+  select(p_id, Unit = variable,grade = value) %>% 
   group_by(Unit) %>% 
   mutate(rank = rank(grade))
 
@@ -75,14 +75,14 @@ df_dateDiff <-
     HW_date, 
     by = c("Unit" = "HW")) %>% 
   mutate(dateDiff = as.numeric(mdy(date) - ymd(release.date))) %>% 
-  select("PennId","Unit","Event","dateDiff")
+  select("p_id","Unit","Event","dateDiff")
 
 df_dateDiff = df_dateDiff[!duplicated(df_dateDiff[c(1,2)]),]
 
 # number of days on piazza
 piazza_canvas_Days <- 
   df_seq %>% 
-  group_by(PennId,Unit) %>% 
+  group_by(p_id,Unit) %>% 
   summarise(
     NDaysPiazza = sum(Event == "Piazza"),
     NDaysCanvas = sum(Event == "Canvas"))
@@ -92,12 +92,12 @@ piazza_posts <-
   left_join(
     read.csv("df_Piazza.csv"),
     subset(df_seq,Event == "CodioAssign"), 
-    by = c("PennId","Unit")) %>% 
+    by = c("p_id","Unit")) %>% 
   mutate(Keep = ifelse(ymd_hms(Timestamp.x) <= mdy_hm(Timestamp.y),1,0)) %>% 
   subset(Keep ==1) %>% 
-  select(PennId, Unit, Timestamp.x) %>% 
+  select(p_id, Unit, Timestamp.x) %>% 
   mutate(Event = "Piazza") %>% 
-  group_by(PennId,Unit) %>% 
+  group_by(p_id,Unit) %>% 
   summarise(NViews = n())
 
 # canvas videos watched in minutes
@@ -115,10 +115,10 @@ df_v$Unit = as.numeric(as.character(df_v$Unit))
 canvas_minutes = 
   inner_join(
     df_v,
-    subset(df_seq,Event == "CodioAssign"), by = c("PennId","Unit")) %>%
+    subset(df_seq,Event == "CodioAssign"), by = c("p_id","Unit")) %>%
   mutate(Keep = ifelse(ymd_hms(Timestamp.x) <= mdy_hm(Timestamp.y),1,0)) %>%
   subset(Keep ==1) %>% 
-  group_by(PennId,Unit) %>%
+  group_by(p_id,Unit) %>%
   summarise(
     NVideos_clips = n(),
     NVideos = n_distinct(Topic),
@@ -127,9 +127,9 @@ canvas_minutes =
 
     ## join data frames
 df_startDate = 
-  left_join(df_dateDiff, piazza_canvas_Days, by = c("PennId","Unit")) %>% 
-  left_join(.,piazza_posts, by = c("PennId","Unit")) %>% 
-  left_join(.,canvas_minutes, by = c("PennId","Unit"))
+  left_join(df_dateDiff, piazza_canvas_Days, by = c("p_id","Unit")) %>% 
+  left_join(.,piazza_posts, by = c("p_id","Unit")) %>% 
+  left_join(.,canvas_minutes, by = c("p_id","Unit"))
 
 df_startDate[, c(5,6,7,10)][is.na(df_startDate[,c(5,6,7,10)])] <- 0
 
@@ -149,7 +149,7 @@ df_startDate %>%
   subset(NDaysCanvas>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    N_students = n_distinct(PennId),
+    N_students = n_distinct(p_id),
     sum = sum(NDaysCanvas),
     avg = mean(NDaysCanvas))
 
@@ -158,7 +158,7 @@ df_startDate %>%
   subset(NDaysPiazza>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    N_students = n_distinct(PennId),
+    N_students = n_distinct(p_id),
     sum = sum(NViews),
     avg = mean(NViews))
 
@@ -167,7 +167,7 @@ df_startDate %>%
   subset(NDaysCanvas>0) %>% 
   group_by(Unit) %>% 
   summarise(
-    N_students = n_distinct(PennId),
+    N_students = n_distinct(p_id),
     sum = sum(NMinutes),
     avg = mean(NMinutes))
 
