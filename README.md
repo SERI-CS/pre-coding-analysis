@@ -4,7 +4,7 @@ This repository contains supplementary materials for the following conference pa
 
 Elizabeth B. Cloude, Jiayi Zhang, Ryan S. Baker, and Eric Fouh\
 **Procrastination vs. Active Delay: How Students Prepare to Code in Introductory Programming**\
-Proceedings of the 55th ACM Technical Symposium on Computer Science Education (V. 1). To be held on March 20--23, 2024 in Portland, OR, USA.
+To be published in the Proceedings of the 55th ACM Technical Symposium on Computer Science Education (V. 1). To be held on March 20--23, 2024 in Portland, OR, USA.
 
 # Pre-coding analysis
 The R code file reads data from the files in the data folder and analyzes how students' pre-coding activities (e.g., days and intensity of using piazza and codio) predict behavioral delay in starting to code an assignment and course grades in an introductory computer science course.
